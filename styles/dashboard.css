@@ -1,0 +1,61 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: #111110;
+  color: #E8E6DF;
+  font-family: 'Noto Sans JP', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.dashboard {
+  max-width: 1340px;
+  margin: 0 auto;
+  min-width: 1024px;
+  padding: 0 20px 24px;
+}
+
+.dashboard-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+  font-size: 14px;
+  color: #888;
+  background: #111110;
+}
+
+/* カード共通 */
+.card {
+  background: #1a1a19;
+  border: 1px solid #2a2a29;
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+/* プログレスバー */
+.progress-bar {
+  height: 4px;
+  background: #2a2a29;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.4s ease;
+}
+
+/* スクロールバー */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #1a1a19;
+}
+::-webkit-scrollbar-thumb {
+  background: #3a3a39;
+  border-radius: 3px;
+}
