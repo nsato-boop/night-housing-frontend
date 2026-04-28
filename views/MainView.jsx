@@ -30,6 +30,7 @@ export default function MainView({
           goals={goals}
           selectedStaff={selectedStaff}
           selectedPeriod={selectedPeriod}
+          customDateRange={customDateRange}
         />
         <RevenueBoxes
           sales={sales}

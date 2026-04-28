@@ -1,7 +1,7 @@
 "use client";
 import { useMemo } from "react";
 import { formatYen } from "../utils/formatCurrency";
-import { getThisMonth, getLastMonth, getThisFiscal, getThisWeek, isInPeriod } from "../utils/dateUtils";
+import { getThisMonth, getLastMonth, getThisFiscal, getThisWeek, isInPeriod, parseDate } from "../utils/dateUtils";
 import { THEME } from "../utils/colors";
 
 const CONTRACT_STATUSES = ['審査通過済み（契約準備中）', '仲介手数料着金済み', 'その他売上着金済み', '契約済み', 'AD着金済み'];
@@ -14,7 +14,7 @@ function getPeriodRange(period) {
   return getThisMonth();
 }
 
-export default function HeroSection({ customers, sales, loadingSales, lastMonthSales, goals, selectedStaff, selectedPeriod }) {
+export default function HeroSection({ customers, sales, loadingSales, lastMonthSales, goals, selectedStaff, selectedPeriod, customDateRange }) {
   const data = useMemo(() => {
     const filtered = selectedStaff === 'チーム全体'
       ? customers
@@ -85,17 +85,37 @@ export default function HeroSection({ customers, sales, loadingSales, lastMonthS
         return sum + (Number(c.fee) || 0) + (Number(c.ad) || 0) + (Number(c.other_revenue) || 0);
       }, 0);
 
+    // 期間内に審査通過になった案件の見込み
+    const prospectPeriod = customDateRange
+      ? { start: parseDate(customDateRange.start), end: parseDate(customDateRange.end) || new Date(9999, 11, 31) }
+      : { start, end };
+    const newProspect = filtered
+      .filter(c => c.status === '審査通過済み（契約準備中）')
+      .filter(c => {
+        if (!c.taiou_mark_updated_at) return false;
+        const d = parseDate(c.taiou_mark_updated_at);
+        return d && d >= prospectPeriod.start && d <= prospectPeriod.end;
+      })
+      .reduce((sum, c) => {
+        return sum + (Number(c.fee) || 0) + (Number(c.ad) || 0) + (Number(c.other_revenue) || 0);
+      }, 0);
+
+    // サブテキストのラベル
+    const periodLabel = customDateRange ? '期間内新規' :
+      selectedPeriod === 'thisWeek' ? '今週新規' :
+      selectedPeriod === 'fiscal' ? '今期新規' : '今月新規';
+
     return {
       contracted, lastContracted, contractedDiff,
       received, lastReceived, receivedDiff,
-      prospect,
+      prospect, newProspect, periodLabel,
       newCount, newDiff,
       activeCount: active.length, proposalCount, viewingCount, examCount,
       contractCount, contractRate,
       lossCount, lossRate,
       salesTarget, targetPercent,
     };
-  }, [customers, sales, lastMonthSales, goals, selectedStaff, selectedPeriod]);
+  }, [customers, sales, lastMonthSales, goals, selectedStaff, selectedPeriod, customDateRange]);
 
   const d = data;
 
@@ -120,7 +140,7 @@ export default function HeroSection({ customers, sales, loadingSales, lastMonthS
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 11, color: THEME.textSub, marginBottom: 2 }}>売上見込み</div>
           <div style={{ fontSize: 28, fontWeight: 600, color: '#5EEAD4' }}>{formatYen(d.prospect)}</div>
-          <div style={{ fontSize: 11, color: THEME.textSub }}>審査通過済み</div>
+          <div style={{ fontSize: 13, color: '#5EEAD4' }}>{d.periodLabel} {formatYen(d.newProspect)}</div>
         </div>
       </div>
 
