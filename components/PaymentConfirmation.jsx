@@ -15,11 +15,6 @@ const TARGET_STATUSES = [
   "その他売上着金済み",
 ];
 
-function todayStr() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
 function getPeriodRange(selectedPeriod, customDateRange) {
   if (customDateRange) {
     return {
@@ -42,8 +37,6 @@ export default function PaymentConfirmation({ customers, selectedStaff, selected
   const [dealValues, setDealValues] = useState({ commission: "", ad: "", otherSales: "" });
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
-  // 着金日: { "customerId-type": "2026-04-26" }
-  const [receivedDates, setReceivedDates] = useState({});
 
   const cases = useMemo(() => {
     const range = getPeriodRange(selectedPeriod, customDateRange);
@@ -72,16 +65,6 @@ export default function PaymentConfirmation({ customers, selectedStaff, selected
   }, [customers, selectedStaff, selectedPeriod, customDateRange]);
 
   const getDateKey = (customerId, type) => `${customerId}-${type}`;
-
-  const getReceivedDate = (customerId, type) => {
-    const key = getDateKey(customerId, type);
-    return receivedDates[key] || todayStr();
-  };
-
-  const setReceivedDate = (customerId, type, value) => {
-    const key = getDateKey(customerId, type);
-    setReceivedDates(prev => ({ ...prev, [key]: value }));
-  };
 
   const handleCancel = async (customerId, type) => {
     if (!window.confirm("着金確認を取り消しますか？")) return;
@@ -112,11 +95,10 @@ export default function PaymentConfirmation({ customers, selectedStaff, selected
     setLoading(prev => ({ ...prev, [key]: true }));
     setErrorMsg(null);
     try {
-      const receivedDate = getReceivedDate(customerId, type);
       const res = await fetch(`${API_URL}/api/customers/${encodeURIComponent(customerId)}/confirm-payment`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, receivedDate }),
+        body: JSON.stringify({ type }),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json.success) {
@@ -181,17 +163,6 @@ export default function PaymentConfirmation({ customers, selectedStaff, selected
     outline: "none",
   };
 
-  const dateInputStyle = {
-    fontSize: 9,
-    padding: "1px 4px",
-    borderRadius: 4,
-    border: `1px solid ${THEME.border}`,
-    background: "#1a1a19",
-    color: THEME.text,
-    outline: "none",
-    width: 110,
-  };
-
   const renderPaymentRow = (c, label, amount, type, isReceived, receivedDate, loadingKey) => {
     if (amount <= 0) return null;
     const isLoading = loading[loadingKey];
@@ -220,21 +191,13 @@ export default function PaymentConfirmation({ customers, selectedStaff, selected
             </button>
           </>
         ) : (
-          <>
-            <input
-              type="date"
-              style={dateInputStyle}
-              value={getReceivedDate(c.id, type)}
-              onChange={e => setReceivedDate(c.id, type, e.target.value)}
-            />
-            <button
-              style={btnStyle(false, isLoading)}
-              onClick={() => handleConfirm(c.id, type)}
-              disabled={isLoading}
-            >
-              {isLoading ? "..." : "着金確認"}
-            </button>
-          </>
+          <button
+            style={btnStyle(false, isLoading)}
+            onClick={() => handleConfirm(c.id, type)}
+            disabled={isLoading}
+          >
+            {isLoading ? "..." : "着金確認"}
+          </button>
         )}
       </div>
     );

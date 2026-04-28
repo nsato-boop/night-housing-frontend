@@ -20,11 +20,6 @@ const STATUS_GROUPS = [
   { key: "着金済み", statuses: ["仲介手数料着金済み", "AD着金済み", "その他売上着金済み"], label: "着金済み" },
 ];
 
-function todayStr() {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
 function getPeriodRange(selectedPeriod, customDateRange) {
   if (customDateRange) {
     return {
@@ -58,7 +53,6 @@ export default function TeamPaymentConfirmation({
   const [dealValues, setDealValues] = useState({ commission: "", ad: "", otherSales: "" });
   const [saving, setSaving] = useState(false);
   const [errorMsg, setErrorMsg] = useState(null);
-  const [receivedDates, setReceivedDates] = useState({});
 
   const cases = useMemo(() => {
     const range = getPeriodRange(selectedPeriod, customDateRange);
@@ -99,20 +93,16 @@ export default function TeamPaymentConfirmation({
   }, [cases]);
 
   const getDateKey = (id, type) => `${id}-${type}`;
-  const getReceivedDate = (id, type) => receivedDates[getDateKey(id, type)] || todayStr();
-  const setReceivedDate = (id, type, val) =>
-    setReceivedDates(prev => ({ ...prev, [getDateKey(id, type)]: val }));
 
   const handleConfirm = async (customerId, type) => {
     const key = getDateKey(customerId, type);
     setLoading(prev => ({ ...prev, [key]: true }));
     setErrorMsg(null);
     try {
-      const receivedDate = getReceivedDate(customerId, type);
       const res = await fetch(`${API_URL}/api/customers/${encodeURIComponent(customerId)}/confirm-payment`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type, receivedDate }),
+        body: JSON.stringify({ type }),
       });
       const json = await res.json().catch(() => ({}));
       if (!res.ok || !json.success) {
@@ -174,11 +164,6 @@ export default function TeamPaymentConfirmation({
     }
   };
 
-  const dateInputStyle = {
-    fontSize: 9, padding: "1px 4px", borderRadius: 4,
-    border: `1px solid ${THEME.border}`, background: "#1a1a19",
-    color: THEME.text, outline: "none", width: 110,
-  };
   const numberInputStyle = {
     fontSize: 10, padding: "3px 6px", borderRadius: 4,
     border: `1px solid ${THEME.border}`, background: "#1a1a19",
@@ -212,25 +197,18 @@ export default function TeamPaymentConfirmation({
             </button>
           </>
         ) : (
-          <>
-            <input
-              type="date" style={dateInputStyle}
-              value={getReceivedDate(c.id, type)}
-              onChange={e => setReceivedDate(c.id, type, e.target.value)}
-            />
-            <button
-              onClick={() => handleConfirm(c.id, type)}
-              disabled={isLoading}
-              style={{
-                fontSize: 9, padding: "2px 8px", borderRadius: 4,
-                border: `1px solid ${THEME.border}`, background: "transparent",
-                color: THEME.textSub, cursor: isLoading ? "default" : "pointer",
-                opacity: isLoading ? 0.5 : 1,
-              }}
-            >
-              {isLoading ? "..." : "着金確認"}
-            </button>
-          </>
+          <button
+            onClick={() => handleConfirm(c.id, type)}
+            disabled={isLoading}
+            style={{
+              fontSize: 9, padding: "2px 8px", borderRadius: 4,
+              border: `1px solid ${THEME.border}`, background: "transparent",
+              color: THEME.textSub, cursor: isLoading ? "default" : "pointer",
+              opacity: isLoading ? 0.5 : 1,
+            }}
+          >
+            {isLoading ? "..." : "着金確認"}
+          </button>
         )}
       </div>
     );
