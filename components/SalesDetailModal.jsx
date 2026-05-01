@@ -79,11 +79,13 @@ export default function SalesDetailModal({ onClose, selectedStaff, selectedPerio
       return { ...prev, deals: prev.deals.map(d => d.rowNumber === deal.rowNumber ? { ...d, [field]: newValue } : d) };
     });
     try {
+      console.log("[SalesDetail] POST /api/sales-detail/update", { rowNumber: deal.rowNumber, column, value: newValue });
       const res = await fetch(`${API_URL}/api/sales-detail/update`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ rowNumber: deal.rowNumber, column, value: newValue }),
       });
       const json = await res.json();
+      console.log("[SalesDetail] Update response:", json);
       if (!json.success) throw new Error(json.error || "更新失敗");
     } catch (err) {
       setData(prev => {
@@ -108,11 +110,13 @@ export default function SalesDetailModal({ onClose, selectedStaff, selectedPerio
       return { ...prev, deals: prev.deals.map(d => d.rowNumber === deal.rowNumber ? updatedDeal : d) };
     });
     try {
+      console.log("[SalesDetail] POST /api/sales-detail/update-cell", { rowNumber: deal.rowNumber, column, value: newValue });
       const res = await fetch(`${API_URL}/api/sales-detail/update-cell`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ rowNumber: deal.rowNumber, column, value: newValue }),
       });
       const json = await res.json();
+      console.log("[SalesDetail] Update-cell response:", json);
       if (!json.success) throw new Error(json.error || "更新失敗");
     } catch (err) {
       setData(prev => {
@@ -376,16 +380,23 @@ function AddSalesForm({ staffList, onClose, onSuccess }) {
     if (!form.staff) { setFormError("担当者を選択してください"); return; }
     setSubmitting(true); setFormError(null);
     try {
+      const body = { staff: form.staff, customerName: form.customerName, contractDate: form.contractDate,
+        adClient: form.adClient, commission: Number(form.commission) || 0, adSales: Number(form.adSales) || 0, otherSales: Number(form.otherSales) || 0,
+        commissionDate: form.commissionDate, otherDate: form.otherDate, adDate: form.adDate };
+      console.log("[SalesDetail] POST /api/sales-detail/add", body);
       const res = await fetch(`${API_URL}/api/sales-detail/add`, {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ staff: form.staff, customerName: form.customerName, contractDate: form.contractDate,
-          adClient: form.adClient, commission: Number(form.commission) || 0, adSales: Number(form.adSales) || 0, otherSales: Number(form.otherSales) || 0,
-          commissionDate: form.commissionDate, otherDate: form.otherDate, adDate: form.adDate }),
+        body: JSON.stringify(body),
       });
+      console.log("[SalesDetail] Response status:", res.status);
       const json = await res.json();
+      console.log("[SalesDetail] Response:", json);
       if (!json.success) throw new Error(json.error || "登録失敗");
       onSuccess();
-    } catch (err) { setFormError(err.message); } finally { setSubmitting(false); }
+    } catch (err) {
+      console.error("[SalesDetail] Error:", err);
+      setFormError(err.message || "通信エラー: サーバーに接続できません");
+    } finally { setSubmitting(false); }
   };
 
   return (
