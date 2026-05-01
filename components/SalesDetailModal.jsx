@@ -20,6 +20,7 @@ export default function SalesDetailModal({ onClose, selectedStaff, selectedPerio
     setLoading(true);
     const params = new URLSearchParams();
     if (staffFilter !== "全担当者") params.set("staff", staffFilter);
+    params.set("_t", Date.now());
     fetch(`${API_URL}/api/sales-detail?${params}`)
       .then(r => r.json())
       .then(d => { if (d.success !== false) setData(d); })
@@ -424,7 +425,7 @@ function AddSalesForm({ staffList, onClose, onSuccess }) {
         <div><label style={labelStyle}>その他入金日</label><input type="date" value={form.otherDate} onChange={e => setForm(p => ({ ...p, otherDate: e.target.value }))} style={inputStyle} /></div>
         <div></div>
       </div>
-      <button onClick={handleSubmit} disabled={submitting} style={{ padding: "8px 24px", borderRadius: 6, border: "none", background: submitting ? "#555" : "#14B8A6", color: "#fff", fontSize: 12, fontWeight: 600, cursor: submitting ? "default" : "pointer" }}>
+      <button type="button" onClick={() => { console.log("[SalesDetail] 登録ボタン押下"); handleSubmit(); }} disabled={submitting} style={{ padding: "8px 24px", borderRadius: 6, border: "none", background: submitting ? "#555" : "#14B8A6", color: "#fff", fontSize: 12, fontWeight: 600, cursor: submitting ? "default" : "pointer" }}>
         {submitting ? "登録中..." : "登録"}
       </button>
     </div>
