@@ -129,7 +129,12 @@ export default function SalesDetailModal({ onClose, selectedStaff, selectedPerio
   };
 
   const showError = (msg) => { setError(msg); setTimeout(() => setError(null), 5000); };
-  const handleAddSuccess = () => { setShowAddForm(false); fetchData(); };
+  const handleAddSuccess = () => {
+    console.log("[SalesDetail] handleAddSuccess: フォーム閉じてデータ再取得");
+    setShowAddForm(false);
+    // 少し待ってからfetchしてキャッシュクリアを待つ
+    setTimeout(() => fetchData(), 500);
+  };
 
   const COLUMNS = [
     { key: "no", label: "No" },
@@ -393,7 +398,9 @@ function AddSalesForm({ staffList, onClose, onSuccess }) {
       const json = await res.json();
       console.log("[SalesDetail] Response:", json);
       if (!json.success) throw new Error(json.error || "登録失敗");
+      console.log("[SalesDetail] 登録成功、onSuccess呼び出し");
       onSuccess();
+      return;
     } catch (err) {
       console.error("[SalesDetail] Error:", err);
       setFormError(err.message || "通信エラー: サーバーに接続できません");
