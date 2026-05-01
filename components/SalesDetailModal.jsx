@@ -366,7 +366,7 @@ function CheckBox({ checked, onChange }) {
 // ── AddSalesForm ──
 
 function AddSalesForm({ staffList, onClose, onSuccess }) {
-  const [form, setForm] = useState({ staff: staffList[0] || "", customerName: "", contractDate: "", adClient: "", commission: "", adSales: "", otherSales: "" });
+  const [form, setForm] = useState({ staff: staffList[0] || "", customerName: "", contractDate: "", adClient: "", commission: "", adSales: "", otherSales: "", commissionDate: "", otherDate: "", adDate: "" });
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState(null);
   const total = (Number(form.commission) || 0) + (Number(form.adSales) || 0) + (Number(form.otherSales) || 0);
@@ -379,7 +379,8 @@ function AddSalesForm({ staffList, onClose, onSuccess }) {
       const res = await fetch(`${API_URL}/api/sales-detail/add`, {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ staff: form.staff, customerName: form.customerName, contractDate: form.contractDate,
-          adClient: form.adClient, commission: Number(form.commission) || 0, adSales: Number(form.adSales) || 0, otherSales: Number(form.otherSales) || 0 }),
+          adClient: form.adClient, commission: Number(form.commission) || 0, adSales: Number(form.adSales) || 0, otherSales: Number(form.otherSales) || 0,
+          commissionDate: form.commissionDate, otherDate: form.otherDate, adDate: form.adDate }),
       });
       const json = await res.json();
       if (!json.success) throw new Error(json.error || "登録失敗");
@@ -405,6 +406,12 @@ function AddSalesForm({ staffList, onClose, onSuccess }) {
         <div><label style={labelStyle}>AD売上</label><input type="number" value={form.adSales} onChange={e => setForm(p => ({ ...p, adSales: e.target.value }))} style={inputStyle} placeholder="66000" /></div>
         <div><label style={labelStyle}>その他売上</label><input type="number" value={form.otherSales} onChange={e => setForm(p => ({ ...p, otherSales: e.target.value }))} style={inputStyle} placeholder="33000" /></div>
         <div><label style={labelStyle}>合計（自動計算）</label><div style={{ ...inputStyle, background: THEME.card, display: "flex", alignItems: "center" }}>{formatYen(total)}</div></div>
+      </div>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 10, marginBottom: 12 }}>
+        <div><label style={labelStyle}>仲手入金日</label><input type="date" value={form.commissionDate} onChange={e => setForm(p => ({ ...p, commissionDate: e.target.value }))} style={inputStyle} /></div>
+        <div><label style={labelStyle}>AD入金予定日</label><input type="date" value={form.adDate} onChange={e => setForm(p => ({ ...p, adDate: e.target.value }))} style={inputStyle} /></div>
+        <div><label style={labelStyle}>その他入金日</label><input type="date" value={form.otherDate} onChange={e => setForm(p => ({ ...p, otherDate: e.target.value }))} style={inputStyle} /></div>
+        <div></div>
       </div>
       <button onClick={handleSubmit} disabled={submitting} style={{ padding: "8px 24px", borderRadius: 6, border: "none", background: submitting ? "#555" : "#14B8A6", color: "#fff", fontSize: 12, fontWeight: 600, cursor: submitting ? "default" : "pointer" }}>
         {submitting ? "登録中..." : "登録"}
