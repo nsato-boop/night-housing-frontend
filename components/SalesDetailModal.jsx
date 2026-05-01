@@ -6,7 +6,7 @@ import { formatYen } from "../utils/formatCurrency";
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://night-housing-dashboard.onrender.com";
 
 // ナイトハウジングの営業マンリスト
-const STAFF_LIST = ["澤田", "中尾", "松井", "茂木", "田中和弘", "長田", "太森", "小川"];
+const STAFF_LIST = ["澤田", "中尾", "松井", "茂木", "田中和弘", "長田", "太森", "小川", "吉田", "八重柏", "太田"];
 
 export default function SalesDetailModal({ onClose, selectedStaff, selectedPeriod, customDateRange }) {
   const [data, setData] = useState(null);
