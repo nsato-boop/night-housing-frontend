@@ -1,5 +1,7 @@
 "use client";
+import { useState } from "react";
 import HeroSection from "../components/HeroSection";
+import SalesDetailModal from "../components/SalesDetailModal";
 import RevenueBoxes from "../components/RevenueBoxes";
 import RevenueChart from "../components/RevenueChart";
 import Pipeline from "../components/Pipeline";
@@ -13,8 +15,17 @@ export default function MainView({
   selectedStaff, selectedPeriod, customDateRange, onRefresh,
 }) {
   const isPersonal = selectedStaff !== 'チーム全体';
+  const [showSalesDetail, setShowSalesDetail] = useState(false);
   return (
     <>
+      {showSalesDetail && (
+        <SalesDetailModal
+          onClose={() => setShowSalesDetail(false)}
+          selectedStaff={selectedStaff}
+          selectedPeriod={selectedPeriod}
+          customDateRange={customDateRange}
+        />
+      )}
       {/* Row 1: ヒーロー(左2/3) + 成約サマリー(右1/3) */}
       <div style={{
         display: 'grid',
@@ -31,6 +42,7 @@ export default function MainView({
           selectedStaff={selectedStaff}
           selectedPeriod={selectedPeriod}
           customDateRange={customDateRange}
+          onOpenSalesDetail={() => setShowSalesDetail(true)}
         />
         <RevenueBoxes
           sales={sales}

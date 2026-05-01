@@ -14,7 +14,7 @@ function getPeriodRange(period) {
   return getThisMonth();
 }
 
-export default function HeroSection({ customers, sales, loadingSales, lastMonthSales, goals, selectedStaff, selectedPeriod, customDateRange }) {
+export default function HeroSection({ customers, sales, loadingSales, lastMonthSales, goals, selectedStaff, selectedPeriod, customDateRange, onOpenSalesDetail }) {
   const data = useMemo(() => {
     const filtered = selectedStaff === 'チーム全体'
       ? customers
@@ -193,6 +193,19 @@ export default function HeroSection({ customers, sales, loadingSales, lastMonthS
           <div style={{ fontSize: 10, color: THEME.danger }}>{d.lossRate}%</div>
         </div>
       </div>
+
+      {onOpenSalesDetail && (
+        <button
+          onClick={onOpenSalesDetail}
+          style={{
+            marginTop: 12, padding: '8px 16px', borderRadius: 6,
+            border: 'none', background: '#14B8A6', color: '#fff',
+            fontSize: 12, fontWeight: 600, cursor: 'pointer', width: '100%',
+          }}
+        >
+          売上詳細を見る
+        </button>
+      )}
     </div>
   );
 }
