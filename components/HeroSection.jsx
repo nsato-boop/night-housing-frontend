@@ -23,11 +23,20 @@ export default function HeroSection({ customers, sales, loadingSales, lastMonthS
   useEffect(() => {
     const params = new URLSearchParams();
     if (selectedStaff && selectedStaff !== 'チーム全体') params.set('staff', selectedStaff);
+    if (customDateRange) {
+      if (customDateRange.start) params.set('start', customDateRange.start);
+      if (customDateRange.end) params.set('end', customDateRange.end);
+    } else {
+      const range = getPeriodRange(selectedPeriod);
+      const fmt = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      params.set('start', fmt(range.start));
+      params.set('end', fmt(range.end));
+    }
     fetch(`${API_URL}/api/sales-detail?${params}`)
       .then(r => r.json())
       .then(d => { if (d.success !== false) setSheetSales(d.summary); })
       .catch(() => {});
-  }, [selectedStaff]);
+  }, [selectedStaff, selectedPeriod, customDateRange]);
 
   const data = useMemo(() => {
     const filtered = selectedStaff === 'チーム全体'

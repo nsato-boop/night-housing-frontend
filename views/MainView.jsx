@@ -52,6 +52,7 @@ export default function MainView({
           customers={customers}
           selectedStaff={selectedStaff}
           selectedPeriod={selectedPeriod}
+          customDateRange={customDateRange}
         />
       </div>
 
