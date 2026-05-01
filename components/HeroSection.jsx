@@ -1,8 +1,10 @@
 "use client";
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { formatYen } from "../utils/formatCurrency";
 import { getThisMonth, getLastMonth, getThisFiscal, getThisWeek, isInPeriod, parseDate } from "../utils/dateUtils";
 import { THEME } from "../utils/colors";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "https://night-housing-dashboard.onrender.com";
 
 const CONTRACT_STATUSES = ['審査通過済み（契約準備中）', '仲介手数料着金済み', 'その他売上着金済み', '契約済み', 'AD着金済み'];
 const ACTIVE_STATUSES = ['物件提案中', '内見', '審査中', '審査通過済み（契約準備中）'];
@@ -15,6 +17,18 @@ function getPeriodRange(period) {
 }
 
 export default function HeroSection({ customers, sales, loadingSales, lastMonthSales, goals, selectedStaff, selectedPeriod, customDateRange, onOpenSalesDetail }) {
+  // スプシベースの売上データ
+  const [sheetSales, setSheetSales] = useState(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams();
+    if (selectedStaff && selectedStaff !== 'チーム全体') params.set('staff', selectedStaff);
+    fetch(`${API_URL}/api/sales-detail?${params}`)
+      .then(r => r.json())
+      .then(d => { if (d.success !== false) setSheetSales(d.summary); })
+      .catch(() => {});
+  }, [selectedStaff]);
+
   const data = useMemo(() => {
     const filtered = selectedStaff === 'チーム全体'
       ? customers
@@ -23,19 +37,12 @@ export default function HeroSection({ customers, sales, loadingSales, lastMonthS
     const { start, end } = getPeriodRange(selectedPeriod);
     const lastMonth = getLastMonth();
 
-    // 成約売上
-    const contracted = sales?.contract_based?.total || 0;
-    const lastContracted = lastMonthSales?.contract_based?.total || 0;
-    const contractedDiff = lastContracted > 0
-      ? Math.round(((contracted - lastContracted) / lastContracted) * 100)
-      : 0;
-
-    // 着金合計
-    const received = sales?.received_based?.total || 0;
-    const lastReceived = lastMonthSales?.received_based?.total || 0;
-    const receivedDiff = lastReceived > 0
-      ? Math.round(((received - lastReceived) / lastReceived) * 100)
-      : 0;
+    // 成約売上（スプシベース）
+    const contracted = sheetSales?.contractedAmount || 0;
+    // 着金合計（スプシベース）
+    const received = sheetSales?.receivedAmount || 0;
+    // 売上見込み（スプシベース）
+    const prospect = sheetSales?.prospectAmount || 0;
 
     // 新規追加
     const newCount = filtered.filter(c =>
@@ -78,44 +85,15 @@ export default function HeroSection({ customers, sales, loadingSales, lastMonthS
     }
     const targetPercent = salesTarget > 0 ? Math.round((contracted / salesTarget) * 100) : 0;
 
-    // 売上見込み（審査通過済み（契約準備中）のみ）
-    const prospect = filtered
-      .filter(c => c.status === '審査通過済み（契約準備中）')
-      .reduce((sum, c) => {
-        return sum + (Number(c.fee) || 0) + (Number(c.ad) || 0) + (Number(c.other_revenue) || 0);
-      }, 0);
-
-    // 期間内に審査通過になった案件の見込み
-    const prospectPeriod = customDateRange
-      ? { start: parseDate(customDateRange.start), end: parseDate(customDateRange.end) || new Date(9999, 11, 31) }
-      : { start, end };
-    const newProspect = filtered
-      .filter(c => c.status === '審査通過済み（契約準備中）')
-      .filter(c => {
-        if (!c.taiou_mark_updated_at) return false;
-        const d = parseDate(c.taiou_mark_updated_at);
-        return d && d >= prospectPeriod.start && d <= prospectPeriod.end;
-      })
-      .reduce((sum, c) => {
-        return sum + (Number(c.fee) || 0) + (Number(c.ad) || 0) + (Number(c.other_revenue) || 0);
-      }, 0);
-
-    // サブテキストのラベル
-    const periodLabel = customDateRange ? '期間内新規' :
-      selectedPeriod === 'thisWeek' ? '今週新規' :
-      selectedPeriod === 'fiscal' ? '今期新規' : '今月新規';
-
     return {
-      contracted, lastContracted, contractedDiff,
-      received, lastReceived, receivedDiff,
-      prospect, newProspect, periodLabel,
+      contracted, received, prospect,
       newCount, newDiff,
       activeCount: active.length, proposalCount, viewingCount, examCount,
       contractCount, contractRate,
       lossCount, lossRate,
       salesTarget, targetPercent,
     };
-  }, [customers, sales, lastMonthSales, goals, selectedStaff, selectedPeriod, customDateRange]);
+  }, [customers, goals, selectedStaff, selectedPeriod, customDateRange, sheetSales]);
 
   const d = data;
 
@@ -125,22 +103,15 @@ export default function HeroSection({ customers, sales, loadingSales, lastMonthS
       <div style={{ display: 'flex', gap: 14, marginBottom: 10 }}>
         <div style={{ flex: 1.2 }}>
           <div style={{ fontSize: 11, color: '#93C5FD', marginBottom: 2 }}>成約売上</div>
-          <div style={{ fontSize: 42, fontWeight: 600, color: '#3B82F6' }}>{loadingSales && !sales ? '...' : formatYen(d.contracted)}</div>
-          <div style={{ fontSize: 11, color: d.contractedDiff >= 0 ? THEME.success : THEME.danger }}>
-            先月比 {d.contractedDiff >= 0 ? '+' : ''}{d.contractedDiff}%
-          </div>
+          <div style={{ fontSize: 42, fontWeight: 600, color: '#3B82F6' }}>{!sheetSales ? '...' : formatYen(d.contracted)}</div>
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 11, color: THEME.textSub, marginBottom: 2 }}>着金合計</div>
-          <div style={{ fontSize: 28, fontWeight: 600, color: THEME.accent }}>{loadingSales && !sales ? '...' : formatYen(d.received)}</div>
-          <div style={{ fontSize: 11, color: d.receivedDiff >= 0 ? THEME.success : THEME.danger }}>
-            先月比 {d.receivedDiff >= 0 ? '+' : ''}{d.receivedDiff}%
-          </div>
+          <div style={{ fontSize: 28, fontWeight: 600, color: THEME.accent }}>{!sheetSales ? '...' : formatYen(d.received)}</div>
         </div>
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 11, color: THEME.textSub, marginBottom: 2 }}>売上見込み</div>
-          <div style={{ fontSize: 28, fontWeight: 600, color: '#5EEAD4' }}>{formatYen(d.prospect)}</div>
-          <div style={{ fontSize: 13, color: '#5EEAD4' }}>{d.periodLabel} {formatYen(d.newProspect)}</div>
+          <div style={{ fontSize: 28, fontWeight: 600, color: '#5EEAD4' }}>{!sheetSales ? '...' : formatYen(d.prospect)}</div>
         </div>
       </div>
 
