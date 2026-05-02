@@ -20,7 +20,6 @@ export default function SalesDetailModal({ onClose, selectedStaff, selectedPerio
     setLoading(true);
     const params = new URLSearchParams();
     if (staffFilter !== "全担当者") params.set("staff", staffFilter);
-    params.set("_t", Date.now());
     fetch(`${API_URL}/api/sales-detail?${params}`)
       .then(r => r.json())
       .then(d => { if (d.success !== false) setData(d); })
@@ -132,8 +131,17 @@ export default function SalesDetailModal({ onClose, selectedStaff, selectedPerio
   const handleAddSuccess = () => {
     console.log("[SalesDetail] handleAddSuccess: フォーム閉じてデータ再取得");
     setShowAddForm(false);
-    // 少し待ってからfetchしてキャッシュクリアを待つ
-    setTimeout(() => fetchData(), 500);
+    // キャッシュスキップで即時再取得
+    setLoading(true);
+    const params = new URLSearchParams();
+    if (staffFilter !== "全担当者") params.set("staff", staffFilter);
+    params.set("noCache", "1");
+    params.set("_t", Date.now());
+    fetch(`${API_URL}/api/sales-detail?${params}`)
+      .then(r => r.json())
+      .then(d => { if (d.success !== false) setData(d); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   };
 
   const COLUMNS = [
