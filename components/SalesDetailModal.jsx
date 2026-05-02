@@ -16,16 +16,41 @@ export default function SalesDetailModal({ onClose, selectedStaff, selectedPerio
   const [showAddForm, setShowAddForm] = useState(false);
   const [error, setError] = useState(null);
 
+  // 月選択（初期値: 今月）
+  const now = new Date();
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
+
+  const isCurrentMonth = selectedYear === now.getFullYear() && selectedMonth === now.getMonth() + 1;
+  const isFutureMonth = selectedYear > now.getFullYear() || (selectedYear === now.getFullYear() && selectedMonth > now.getMonth() + 1);
+
+  const goToPrevMonth = () => {
+    if (selectedMonth === 1) { setSelectedYear(y => y - 1); setSelectedMonth(12); }
+    else setSelectedMonth(m => m - 1);
+  };
+  const goToNextMonth = () => {
+    if (isCurrentMonth) return;
+    if (selectedMonth === 12) { setSelectedYear(y => y + 1); setSelectedMonth(1); }
+    else setSelectedMonth(m => m + 1);
+  };
+
+  // 選択月の期間
+  const monthStart = `${selectedYear}-${String(selectedMonth).padStart(2, "0")}-01`;
+  const lastDay = new Date(selectedYear, selectedMonth, 0).getDate();
+  const monthEnd = `${selectedYear}-${String(selectedMonth).padStart(2, "0")}-${lastDay}`;
+
   const fetchData = useCallback(() => {
     setLoading(true);
     const params = new URLSearchParams();
     if (staffFilter !== "全担当者") params.set("staff", staffFilter);
+    params.set("start", monthStart);
+    params.set("end", monthEnd);
     fetch(`${API_URL}/api/sales-detail?${params}`)
       .then(r => r.json())
       .then(d => { if (d.success !== false) setData(d); })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [staffFilter]);
+  }, [staffFilter, monthStart, monthEnd]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -133,8 +158,9 @@ export default function SalesDetailModal({ onClose, selectedStaff, selectedPerio
     setLoading(true);
     const params = new URLSearchParams();
     if (staffFilter !== "全担当者") params.set("staff", staffFilter);
+    params.set("start", monthStart);
+    params.set("end", monthEnd);
     params.set("noCache", "1");
-    params.set("_t", Date.now());
     fetch(`${API_URL}/api/sales-detail?${params}`)
       .then(r => r.json())
       .then(d => { if (d.success !== false) setData(d); })
@@ -188,8 +214,16 @@ export default function SalesDetailModal({ onClose, selectedStaff, selectedPerio
       <div style={{ maxWidth: 1400, margin: "40px auto", padding: 24, background: THEME.bg, borderRadius: 12, minHeight: "80vh" }}>
         {/* Header */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
             <span style={{ fontSize: 18, fontWeight: 600, color: THEME.text }}>売上詳細</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+              <button type="button" onClick={goToPrevMonth} style={monthNavStyle}>◀</button>
+              <span style={{ fontSize: 13, fontWeight: 500, color: THEME.text, minWidth: 90, textAlign: "center" }}>
+                {selectedYear}年{selectedMonth}月
+              </span>
+              <button type="button" onClick={goToNextMonth} disabled={isCurrentMonth}
+                style={{ ...monthNavStyle, opacity: isCurrentMonth ? 0.3 : 1, cursor: isCurrentMonth ? "default" : "pointer" }}>▶</button>
+            </div>
             <select value={staffFilter} onChange={e => setStaffFilter(e.target.value)} style={selectStyle}>
               {staffList.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
@@ -488,6 +522,7 @@ function parseDate(d) { if (!d) return null; const m = String(d).match(/(\d{4})[
 function shortDate(d) { if (!d) return ""; const m = String(d).match(/(\d{4})[/-](\d{1,2})[/-](\d{1,2})/); if (m) return `${m[2]}/${m[3]}`; return d; }
 
 const selectStyle = { fontSize: 11, padding: "4px 8px", borderRadius: 4, border: `1px solid ${THEME.border}`, background: THEME.card, color: THEME.text, outline: "none", cursor: "pointer" };
+const monthNavStyle = { background: "none", border: "none", color: THEME.textSub, cursor: "pointer", fontSize: 14, padding: "2px 6px" };
 const cellStyle = { padding: "5px 4px", color: THEME.text, whiteSpace: "nowrap" };
 const editableStyle = { cursor: "pointer", padding: "2px 4px", borderRadius: 3, display: "inline-block", minWidth: 20, transition: "background 0.15s" };
 const editInputStyle = { fontSize: 11, padding: "3px 5px", borderRadius: 3, border: `1px solid ${THEME.border}`, background: THEME.bg, color: THEME.text, outline: "none", boxSizing: "border-box" };
