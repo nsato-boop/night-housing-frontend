@@ -128,10 +128,8 @@ export default function SalesDetailModal({ onClose, selectedStaff, selectedPerio
   };
 
   const showError = (msg) => { setError(msg); setTimeout(() => setError(null), 5000); };
-  const handleAddSuccess = () => {
-    console.log("[SalesDetail] handleAddSuccess: フォーム閉じてデータ再取得");
-    setShowAddForm(false);
-    // キャッシュスキップで即時再取得
+
+  const refreshData = () => {
     setLoading(true);
     const params = new URLSearchParams();
     if (staffFilter !== "全担当者") params.set("staff", staffFilter);
@@ -142,6 +140,27 @@ export default function SalesDetailModal({ onClose, selectedStaff, selectedPerio
       .then(d => { if (d.success !== false) setData(d); })
       .catch(() => {})
       .finally(() => setLoading(false));
+  };
+
+  const handleAddSuccess = () => {
+    setShowAddForm(false);
+    refreshData();
+  };
+
+  // ── 行削除 ──
+  const handleDelete = async (deal) => {
+    if (!window.confirm(`No.${deal.no} の ${deal.customerName} を削除しますか？\nこの操作は元に戻せません。`)) return;
+    try {
+      const res = await fetch(`${API_URL}/api/sales-detail/delete`, {
+        method: "DELETE", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ no: deal.no }),
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || "削除失敗");
+      refreshData();
+    } catch (err) {
+      showError(`削除エラー: ${err.message}`);
+    }
   };
 
   const COLUMNS = [
@@ -160,6 +179,7 @@ export default function SalesDetailModal({ onClose, selectedStaff, selectedPerio
     { key: "commissionReceived", label: "仲着" },
     { key: "adReceived", label: "AD着" },
     { key: "otherReceived", label: "他着" },
+    { key: "_delete", label: "" },
   ];
 
   return (
@@ -249,9 +269,16 @@ export default function SalesDetailModal({ onClose, selectedStaff, selectedPerio
                         <td style={cellStyle}><CheckBox checked={d.commissionReceived} onChange={() => handleCheckToggle(d, "commissionReceived", "H")} /></td>
                         <td style={cellStyle}><CheckBox checked={d.adReceived} onChange={() => handleCheckToggle(d, "adReceived", "J")} /></td>
                         <td style={cellStyle}><CheckBox checked={d.otherReceived} onChange={() => handleCheckToggle(d, "otherReceived", "I")} /></td>
+                        <td style={cellStyle}>
+                          <button type="button" onClick={() => handleDelete(d)}
+                            style={{ background: "none", border: "none", color: "#666", cursor: "pointer", fontSize: 12, padding: "2px 4px", transition: "color 0.15s" }}
+                            onMouseEnter={e => e.target.style.color = "#E53E3E"}
+                            onMouseLeave={e => e.target.style.color = "#666"}
+                          >×</button>
+                        </td>
                       </tr>
                     ))}
-                    {deals.length === 0 && <tr><td colSpan={15} style={{ ...cellStyle, textAlign: "center", padding: 30, color: THEME.textSub }}>データなし</td></tr>}
+                    {deals.length === 0 && <tr><td colSpan={16} style={{ ...cellStyle, textAlign: "center", padding: 30, color: THEME.textSub }}>データなし</td></tr>}
                   </tbody>
                 </table>
               </div>
